@@ -1,0 +1,13 @@
+[package]
+name = "doorkeeper"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.44"
+async-dup = "1.2.2"
+async-h1 = "2.3.2"
+http-types = "2.12.0"
+smol = "1.2.5"
