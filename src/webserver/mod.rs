@@ -1,108 +1,41 @@
-use anyhow::Result;
-use http_types::{Error, Request, Response, StatusCode};
 use smol::Async;
-use std::net::SocketAddr;
-use std::net::TcpListener;
-use std::pin::Pin;
+use std::collections::HashMap;
+use std::net::{TcpListener, TcpStream};
+use utils::Result;
 
-mod constant;
-mod context;
-mod middleware;
+mod error_handler;
+mod protocol;
 
-pub use self::constant::AsyncResult;
-pub use self::context::Context;
-pub use self::middleware::Middleware;
+// use protocol::HttpClient;
 
-pub struct App {
-    middlewares: Vec<Box<dyn Middleware>>,
+const RESPONSE: &[u8] = br#"
+HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 47
+<!DOCTYPE html><html><body>Hello!</body></html>
+"#;
+
+async fn serve(mut stream: Async<TcpStream>) -> Result<()> {
+    let req = http::Request::generate(stream);
+    error_handler::error_handler(res);
+    stream.write_all(RESPONSE).await?;
+    Ok(())
 }
 
-impl App {
-    pub fn new() -> App {
-        App {
-            middlewares: Vec::new(),
-        }
-    }
-
-    async fn handler_request(&self, req: Request) -> http_types::Result<Response> {
-        let mut ctx = Context::new(req);
-        //        let mut postHandlerMid: Vec<Box<dyn Middleware>> = Vec::new();
-        let mut post_handler_res: Result<()> = Ok(());
-        let mut current = 0;
+pub fn listen() -> Result<()> {
+    smol::block_on(async {
+        let listener = Async::<TcpListener>::bind(8000)?;
         loop {
-            match self.middlewares.get(current) {
-                Some(m) => {
-                    post_handler_res = Pin::from(m.handle(&mut ctx)).await;
-                }
-                None => {
-                    break;
-                }
-            };
-            if let Err(_) = post_handler_res {
-                break;
-            }
-            current = current + 1;
-        }
-        loop {
-            if current == 0 {
-                break;
-            }
-            current = current - 1;
-            match self.middlewares.get(current) {
-                Some(m) => {
-                    post_handler_res = Pin::from(m.post_handle(&mut ctx, post_handler_res)).await;
-                }
-                None => {
-                    break;
-                }
-            };
-        }
-        match post_handler_res {
-            Err(err) => Err(Error::new(StatusCode::InternalServerError, err)),
-            Ok(_) => Ok(ctx.res),
-        }
-    }
+            // Accept the next connection.
+            let (stream, _) = listener.accept().await?;
 
-    pub fn use_middleware(&mut self, mid: Box<dyn Middleware>) {
-        self.middlewares.push(mid);
-    }
-    /*    pub fn listen<A: Into<SocketAddr>>(&self, ipPort: A) -> Result<()> {
-            smol::block_on(async {
-                // Format the full host address.
-                let listener = Async::<TcpListener>::bind(ipPort)?;
-                loop {
-                    let app = async_dup::Arc::new(self);
-                    // Accept the next connection.
-                    let (stream, _) = listener.accept().await?;
-
-                    // Spawn a background task serving this connection.
-                    let stream = async_dup::Arc::new(stream);
-                    let task = smol::spawn(async move {
-                        if let Err(err) = async_h1::accept(stream, |req| app.handler_request(req)).await
-                        {
-                            println!("Connection error: {:#?}", err);
-                        }
-                    });
-
-                    // Detach the task to let it run in the background.
-                    task.detach();
-                }
-            })
-    }*/
-    pub fn listen<A: Into<SocketAddr>>(&self, ip_port: A) -> Result<()> {
-        smol::block_on(async {
-            // Format the full host address.
-            let listener = Async::<TcpListener>::bind(ip_port)?;
-            loop {
-                // Accept the next connection.
-                let (stream, _) = listener.accept().await?;
-                let stream = async_dup::Arc::new(stream);
-
-                // Spawn a background task serving this connection.
-                if let Err(err) = async_h1::accept(stream, |req| self.handler_request(req)).await {
+            smol::spawn(async move {
+                if let Err(err) = serve(stream).await {
                     println!("Connection error: {:#?}", err);
                 }
-            }
-        })
-    }
+            })
+            .detach();
+        }
+        Ok(())
+    })
 }
