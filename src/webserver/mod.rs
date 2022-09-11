@@ -1,41 +1,50 @@
-use smol::Async;
-use std::collections::HashMap;
-use std::net::{TcpListener, TcpStream};
-use utils::Result;
-
-mod error_handler;
 mod protocol;
 
-// use protocol::HttpClient;
+use crate::utils::Result;
+use json::{object, JsonValue};
+use protocol::{gen_request, send_response, Response, StatusCode};
+use smol::Async;
+use std::net::{TcpListener, TcpStream};
 
-const RESPONSE: &[u8] = br#"
-HTTP/1.1 200 OK
-Content-Type: text/html
-Content-Length: 47
-<!DOCTYPE html><html><body>Hello!</body></html>
-"#;
+pub use protocol::ToResponseBody;
 
-async fn serve(mut stream: Async<TcpStream>) -> Result<()> {
-    let req = http::Request::generate(stream);
-    error_handler::error_handler(res);
-    stream.write_all(RESPONSE).await?;
-    Ok(())
+struct Test {}
+impl ToResponseBody for Test {
+    fn to_json(&self) -> JsonValue {
+        object! {}
+    }
 }
 
-pub fn listen() -> Result<()> {
-    smol::block_on(async {
-        let listener = Async::<TcpListener>::bind(8000)?;
-        loop {
-            // Accept the next connection.
-            let (stream, _) = listener.accept().await?;
+pub struct App;
 
-            smol::spawn(async move {
-                if let Err(err) = serve(stream).await {
-                    println!("Connection error: {:#?}", err);
-                }
-            })
-            .detach();
-        }
-        Ok(())
-    })
+impl App {
+    pub fn new() -> App {
+        App {}
+    }
+
+    async fn serve(&self, stream: &Async<TcpStream>) -> Result<Response> {
+        let _request = gen_request(stream).await?;
+        Ok(Response {
+            status_code: StatusCode::OK,
+            body: Box::new(Test {}),
+        })
+    }
+
+    pub fn listen(&self) -> Result<()> {
+        smol::block_on(async {
+            let listener = Async::<TcpListener>::bind(([127, 0, 0, 1], 8000))?;
+            loop {
+                // Accept the next connection.
+                let (stream, _) = listener.accept().await?;
+
+                //                smol::spawn(async move {
+                let result = self.serve(&stream).await;
+                //    error_handler::error_handler(res);
+                let response = result.unwrap_or_else(|err| Response::error(Box::new(err)));
+                send_response(&stream, &response).await?;
+                //                })
+                //                .detach();
+            }
+        })
+    }
 }

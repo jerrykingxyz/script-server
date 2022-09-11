@@ -1,5 +1,9 @@
 mod utils;
+mod webserver;
+
+use webserver::App;
 
 fn main() {
-    println!("Hello, world!");
+    let app = App::new();
+    app.listen().unwrap();
 }

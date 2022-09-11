@@ -1,5 +1,9 @@
-mod client;
 mod http;
+mod request;
+mod response;
 
-pub use client::{Request, Response};
-pub use http::HttpClient;
+pub use request::*;
+pub use response::*;
+
+#[cfg(feature = "http")]
+pub use http::{gen_request, send_response};
