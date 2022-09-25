@@ -1,6 +1,7 @@
 use crate::webserver::ToResponseBody;
 use json::{object, JsonValue};
 use std::convert::From;
+use tempfile::PersistError;
 
 #[derive(Debug)]
 pub struct Error {
@@ -17,6 +18,18 @@ impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
         Self {
             message: err.to_string(),
+        }
+    }
+}
+
+impl From<PersistError> for Error {
+    fn from(err: PersistError) -> Self {
+        Self {
+            message: format!(
+                "err: {:?}, file_name: {:?}",
+                err.error.to_string(),
+                err.file.path().to_str()
+            ),
         }
     }
 }
