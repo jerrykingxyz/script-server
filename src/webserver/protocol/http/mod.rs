@@ -7,8 +7,8 @@ use smol::io::BufReader;
 use smol::{prelude::*, Async};
 use std::net::TcpStream;
 
-fn parse_function_name(s: &String) -> Result<String> {
-    let mut sp = s.split(" ");
+fn parse_function_name(s: &str) -> Result<String> {
+    let mut sp = s.split(' ');
     if !matches!(sp.next(), Some("POST")) {
         return Err(Error::new("only allow use POST method".to_string()));
     }
@@ -22,7 +22,7 @@ fn parse_function_name(s: &String) -> Result<String> {
         return Err(Error::new("only support http 1.1".to_string()));
     }
 
-    if !sp.next().is_none() {
+    if sp.next().is_some() {
         return Err(Error::new("http format error".to_string()));
     }
 
@@ -43,8 +43,8 @@ pub async fn gen_request(stream: &Async<TcpStream>) -> Result<Request> {
 pub async fn send_response(mut stream: &Async<TcpStream>, res: &Response) -> Result<()> {
     let body_text = stringify(res.body.to_json());
     let status_text = match res.status_code {
-        StatusCode::OK => "200 OK".to_string(),
-        StatusCode::ERROR => "500 Internal Server Error".to_string(),
+        StatusCode::Ok => "200 OK".to_string(),
+        StatusCode::Error => "500 Internal Server Error".to_string(),
     };
     let http_data = format!(
         r#"HTTP/1.1 {}

@@ -25,7 +25,7 @@ impl App {
     async fn serve(&self, stream: &Async<TcpStream>) -> Result<Response> {
         let _request = gen_request(stream).await?;
         Ok(Response {
-            status_code: StatusCode::OK,
+            status_code: StatusCode::Ok,
             body: Box::new(Test {}),
         })
     }

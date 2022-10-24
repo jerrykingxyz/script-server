@@ -2,8 +2,8 @@ use json::JsonValue;
 
 #[derive(Debug)]
 pub enum StatusCode {
-    OK,
-    ERROR,
+    Ok,
+    Error,
 }
 
 pub trait ToResponseBody {
@@ -18,14 +18,14 @@ pub struct Response {
 impl Response {
     pub fn ok(body: Box<dyn ToResponseBody>) -> Self {
         Self {
-            status_code: StatusCode::OK,
+            status_code: StatusCode::Ok,
             body,
         }
     }
 
     pub fn error(body: Box<dyn ToResponseBody>) -> Self {
         Self {
-            status_code: StatusCode::ERROR,
+            status_code: StatusCode::Error,
             body,
         }
     }
