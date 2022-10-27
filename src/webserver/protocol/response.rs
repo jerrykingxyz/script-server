@@ -16,6 +16,7 @@ pub struct Response {
 }
 
 impl Response {
+    #[allow(dead_code)]
     pub fn ok(body: Box<dyn ToResponseBody>) -> Self {
         Self {
             status_code: StatusCode::Ok,
