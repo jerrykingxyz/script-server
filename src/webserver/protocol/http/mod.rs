@@ -10,20 +10,20 @@ use std::net::TcpStream;
 fn parse_function_name(s: &str) -> Result<String> {
     let mut sp = s.split(' ');
     if !matches!(sp.next(), Some("POST")) {
-        return Err(Error::new("only allow use POST method".to_string()));
+        return Err(Error::new("only allow use POST method"));
     }
 
     let path = sp.next().unwrap_or("");
     if !path.starts_with('/') {
-        return Err(Error::new("http path should start with /".to_string()));
+        return Err(Error::new("http path should start with /"));
     }
 
     if !matches!(sp.next(), Some("HTTP/1.1\r\n")) {
-        return Err(Error::new("only support http 1.1".to_string()));
+        return Err(Error::new("only support http 1.1"));
     }
 
     if sp.next().is_some() {
-        return Err(Error::new("http format error".to_string()));
+        return Err(Error::new("http format error"));
     }
 
     Ok(path[1..].to_string())
