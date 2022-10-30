@@ -13,4 +13,3 @@ http = []
 [dependencies]
 smol = "1.2.5"
 json = "0.12.4"
-fastrand = "1.6.0"
