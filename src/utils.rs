@@ -14,7 +14,7 @@ pub fn has_header(req: &Request, key: &str, value: &str) -> bool {
 
 pub fn executable(file_path: &PathBuf) -> bool {
   match file_path.metadata() {
-    Ok(data) => data.permissions().mode() & 0o111 != 0,
+    Ok(data) => data.is_file() && data.permissions().mode() & 0o111 != 0,
     Err(_) => false,
   }
 }

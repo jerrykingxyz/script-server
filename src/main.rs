@@ -36,23 +36,36 @@ fn main() {
       }
     }
 
-    if !matches!(request.method(), Method::Post) {
+    let method = request.method();
+    if !matches!(method, Method::Post) {
       send_response(request, 404, "no found");
       continue;
     }
 
-    let script_path = &args.scripts_dir.join(&request.url()[1..]);
+    let url = request.url();
+    if url.contains("/../") {
+      send_response(request, 403, "forbidden");
+      continue;
+    }
+
+    let script_path = &args.scripts_dir.join(&url[1..]);
     if !executable(script_path) {
-      send_response(request, 404, "no found");
+      send_response(request, 403, "forbidden");
       continue;
     }
 
     let params: Vec<String> = match read_to_string(request.as_reader()) {
-      Ok(body) => body
-        .split("\n")
-        .into_iter()
-        .map(|item| String::from(item))
-        .collect(),
+      Ok(body) => {
+        if body.is_empty() {
+          vec![]
+        } else {
+          body
+            .split("\n")
+            .into_iter()
+            .map(|item| String::from(item))
+            .collect()
+        }
+      }
       Err(err) => {
         send_response(request, 500, err.to_string());
         continue;
