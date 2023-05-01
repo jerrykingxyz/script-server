@@ -59,11 +59,7 @@ fn main() {
         if body.is_empty() {
           vec![]
         } else {
-          body
-            .split("\n")
-            .into_iter()
-            .map(|item| String::from(item))
-            .collect()
+          body.split('\n').map(String::from).collect()
         }
       }
       Err(err) => {
