@@ -1,5 +1,5 @@
 use crate::error::Result;
-use std::{os::unix::prelude::PermissionsExt, path::Path, process::Command};
+use std::{path::Path, process::Command};
 use tiny_http::{Request, Response};
 
 pub fn has_header(req: &Request, key: &str, value: &str) -> bool {
@@ -12,9 +12,19 @@ pub fn has_header(req: &Request, key: &str, value: &str) -> bool {
   false
 }
 
+// All files are executable on Windows, so just check is file
+#[cfg(windows)]
 pub fn executable(file_path: &Path) -> bool {
   match file_path.metadata() {
-    Ok(data) => data.is_file() && data.permissions().mode() & 0o111 != 0,
+    Ok(data) => data.is_file(),
+    Err(_) => false,
+  }
+}
+#[cfg(unix)]
+pub fn executable(file_path: &Path) -> bool {
+  use std::os::unix::prelude::*;
+  match file_path.metadata() {
+    Ok(data) => data.is_file() && data.mode() & 0o111 != 0,
     Err(_) => false,
   }
 }
